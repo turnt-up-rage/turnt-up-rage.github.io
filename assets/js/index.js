@@ -7,84 +7,92 @@
     "use strict";
 
     $(document).ready(function(){
+        // move main image to header
+        if(
+        	$('.post-template').length > 0 || 
+        	$('.page-template').length > 0
+        ) {
+        	var featured_image = $('img[alt="featured-image"]');
+        	var featured_video = $('.post__content iframe:first-child')
+        	// check if the featured image exists
+        	if(featured_image && featured_image.length > 0) {
+        		// create container for the image
+        		featured_image.appendTo($('.post__media'));
+        	} else if(featured_video && featured_video.length > 0) {
+        		featured_video.appendTo($('.post__media'));
+        	}
+        }
 
-        $(".post-content").fitVids();
-
-        function casperFullImg() {
-            $("img").each( function() {
-                var contentWidth = $(".post-content").outerWidth(); // Width of the content
-                var imageWidth = $(this)[0].naturalWidth; // Original image resolution
-
-                if (imageWidth >= contentWidth) {
-                    $(this).addClass('full-img');
-                } else {
-                    $(this).removeClass('full-img');
-                }
-            });
-        };
-
-        casperFullImg();
-        $(window).smartresize(casperFullImg);
-
-        $(".scroll-down").arctic_scroll();
-
-    });
-
-}(jQuery));
-
-(function($,sr){
-
-  // debouncing function from John Hann
-  // http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
-  var debounce = function (func, threshold, execAsap) {
-      var timeout;
-
-      return function debounced () {
-          var obj = this, args = arguments;
-          function delayed () {
-              if (!execAsap)
-                  func.apply(obj, args);
-              timeout = null;
+        if(
+        	$(document.body).hasClass('home-template') ||
+        	$(document.body).hasClass('archive-template') ||
+        	$(document.body).hasClass('tag-template') ||
+        	$(document.body).hasClass('author-template')
+        ) {
+          // get the post images
+          var blocks = [];
+          
+          $('.post__wrapper_helper--notloaded').each(function(i, block) {
+          	blocks.push(block);
+          });
+          
+          var add_class = function(block, class_name, delay) {
+          	setTimeout(function() {
+          		$(block).addClass(class_name);
+          	}, delay);
           };
+          
+          for(var i = 0; i < blocks.length; i++) {
+          	add_class(blocks[i], 'post__wrapper_helper--animated', i * 200);
+          }
+          
+          $('.post__wrapper_helper--notloaded').each(function(i, wrapper) {
+            wrapper = $(wrapper);
+            var img = wrapper.find('p > img')[0];
+            if(img) {
+              // wait for the images
+              var timer = setInterval(function() {
+                // when the image is laoded
+                if(img.complete) {
+                  // stop periodical calls
+                  clearInterval(timer);
+                  // generate the image wrapper
+                  var src = $(img).attr('src');
+                  img.remove();
+                  var img_container = $('<div class="post__image el__transition_long" style="background-image: url(\''+src+'\')"></div>');
+                  img_container.appendTo(wrapper);
+                  wrapper.removeClass('post__wrapper_helper--notloaded');
+                  // add class with delay
+                  setTimeout(function() {
+                    img_container.addClass('post__image--loaded');
+                  }, 250);
+                }          
+              }, 500);
+              // add necessary mouse events
+              wrapper.mouseenter(function() {
+                wrapper.addClass('post__wrapper_helper--hover');
+              });
 
-          if (timeout)
-              clearTimeout(timeout);
-          else if (execAsap)
-              func.apply(obj, args);
-
-          timeout = setTimeout(delayed, threshold || 100);
-      };
-  }
-  // smartresize 
-  jQuery.fn[sr] = function(fn){  return fn ? this.bind('resize', debounce(fn)) : this.trigger(sr); };
-
-})(jQuery,'smartresize');
-
-// Arctic Scroll by Paul Adam Davis
-// https://github.com/PaulAdamDavis/Arctic-Scroll
-(function ($) {
-    $.fn.arctic_scroll = function (options) {
-
-        var defaults = {
-            elem: $(this),
-            speed: 500
-        };
-        var options = $.extend(defaults, options);
-
-        options.elem.click(function(event){     
-            event.preventDefault();
-            var offset = ($(this).attr('data-offset')) ? $(this).attr('data-offset') : false,
-                position = ($(this).attr('data-position')) ? $(this).attr('data-position') : false;         
-            if (offset) {
-                var toMove = parseInt(offset);
-                $('html,body').stop(true, false).animate({scrollTop: ($(this.hash).offset().top + toMove) }, options.speed);
-            } else if (position) {
-                var toMove = parseInt(position);
-                $('html,body').stop(true, false).animate({scrollTop: toMove }, options.speed);
+              wrapper.mouseleave(function() {
+                wrapper.removeClass('post__wrapper_helper--hover');
+              });
             } else {
-                $('html,body').stop(true, false).animate({scrollTop: ($(this.hash).offset().top) }, options.speed);
+              // where there is no image - display the text directly
+              wrapper.addClass('post__wrapper_helper--hover');
             }
+          });
+        }
+        // fit videos
+        $(".post-header").fitVids();
+        $(".post-content").fitVids();
+        // menu behaviour
+        var main_menu = $(".menu");
+        main_menu.click(function() {
+          if(main_menu.hasClass("menu--open")) {
+            main_menu.removeClass("menu--open");
+          } else {
+            main_menu.addClass("menu--open");
+          }
         });
-
-    };
-})(jQuery);
+    });
+}(jQuery));
